@@ -41,6 +41,8 @@ const state = {
   // UPDATE-1.md requirement 5: Related terms sorting and Top-K
   relatedSortBy: 'co_count',
   relatedTopK: 10,
+  // Results sorting
+  resultsSortBy: 'year',
 };
 
 // DOM Elements
@@ -80,6 +82,9 @@ const elements = {
   resultCount: document.getElementById('resultCount'),
   resultsError: document.getElementById('resultsError'),
   resultsLoading: document.getElementById('resultsLoading'),
+  resultsControls: document.getElementById('resultsControls'),
+  sortByYearBtn: document.getElementById('sortByYearBtn'),
+  sortByTitleBtn: document.getElementById('sortByTitleBtn'),
 
   // Toast
   toastContainer: document.getElementById('toastContainer'),
@@ -478,11 +483,15 @@ function renderResults(data) {
       No results found for "${state.currentQuery}". Try a different search.
       </div>`;
     // Show results section even for no results
+    elements.resultsControls.style.display = 'none';
     elements.resultsSection.style.display = 'block';
     return;
   }
 
-  state.resultsData.slice(0, 200).forEach((result) => {
+  // Sort results
+  const sortedData = sortResults([...state.resultsData], state.resultsSortBy);
+
+  sortedData.slice(0, 200).forEach((result) => {
     const item = createResultElement(result);
     elements.resultsList.appendChild(item);
   });
@@ -490,8 +499,45 @@ function renderResults(data) {
   // Setup infinite scroll
   setupInfiniteScroll();
 
-  // Show results section after rendering is complete
+  // Show controls and results section after rendering is complete
+  elements.resultsControls.style.display = 'flex';
   elements.resultsSection.style.display = 'block';
+}
+
+function sortResults(results, sortBy) {
+  if (sortBy === 'year') {
+    // Sort by year (descending), then by title (ascending)
+    return results.sort((a, b) => {
+      if (b.year !== a.year) {
+        return b.year - a.year;
+      }
+      return a.title.localeCompare(b.title);
+    });
+  } else if (sortBy === 'title') {
+    // Sort by title (ascending)
+    return results.sort((a, b) => a.title.localeCompare(b.title));
+  }
+  return results;
+}
+
+function renderSortedResults() {
+  // Re-render results with new sorting
+  elements.resultsList.innerHTML = '';
+
+  // Sort results
+  const sortedData = sortResults([...state.resultsData], state.resultsSortBy);
+
+  // Update button states
+  elements.sortByYearBtn.classList.toggle('active', state.resultsSortBy === 'year');
+  elements.sortByTitleBtn.classList.toggle('active', state.resultsSortBy === 'title');
+
+  sortedData.slice(0, 200).forEach((result) => {
+    const item = createResultElement(result);
+    elements.resultsList.appendChild(item);
+  });
+
+  // Setup infinite scroll
+  setupInfiniteScroll();
 }
 
 function createResultElement(result) {
@@ -898,6 +944,17 @@ document.addEventListener('DOMContentLoaded', () => {
 
   elements.topk50Btn.addEventListener('click', () => {
     renderRelatedTerms(state.leftResults, state.relatedSortBy, 50);
+  });
+
+  // Results sort buttons
+  elements.sortByYearBtn.addEventListener('click', () => {
+    state.resultsSortBy = 'year';
+    renderSortedResults();
+  });
+
+  elements.sortByTitleBtn.addEventListener('click', () => {
+    state.resultsSortBy = 'title';
+    renderSortedResults();
   });
 
   // Click outside to hide suggestions
