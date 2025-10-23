@@ -561,14 +561,15 @@ async function handleMainInput() {
   const cursorPos = elements.mainInput.selectionStart;
   const lastChar = state.mainInput[cursorPos - 1];
 
-  // Hide operator chooser if we're not at space position
-  if (lastChar !== ' ' || !state.operatorChooserActive) {
-    hideOperatorChooser();
-  }
-
   // Get the current word being typed
   const lastSpaceIndex = state.mainInput.lastIndexOf(' ', cursorPos - 1);
   const currentWord = state.mainInput.substring(lastSpaceIndex + 1, cursorPos);
+
+  // Only hide operator chooser if we're not immediately after a space
+  // and the operator chooser is active
+  if (lastChar !== ' ' && state.operatorChooserActive) {
+    hideOperatorChooser();
+  }
 
   // Fetch and render suggestions for current word
   if (currentWord.length >= CONFIG.MIN_LENGTH && lastChar !== ' ') {
@@ -716,11 +717,10 @@ function confirmOperator() {
   const selectedOp = state.operators[state.operatorIndex];
   const value = elements.mainInput.value;
 
-  // UPDATE-2.md: Don't replace the space, and don't add space after operator
-  // Just append the operator after the existing space
-  elements.mainInput.value = value + selectedOp;
+  // UPDATE-2.md: Append operator and add space after it for next term
+  elements.mainInput.value = value + selectedOp + ' ';
   elements.mainInput.focus();
-  elements.mainInput.setSelectionRange(value.length + selectedOp.length, value.length + selectedOp.length);
+  elements.mainInput.setSelectionRange(value.length + selectedOp.length + 1, value.length + selectedOp.length + 1);
 
   state.mainInput = elements.mainInput.value;
   hideOperatorChooser();
