@@ -89,51 +89,61 @@
 
 ## 實現狀態
 
-### ✅ 已完成的功能
-1. **主查詢欄 (/terms API)**
+### 📋 當前版本（V1 - 原始版本）
+以下是已完成的功能（根據 SPEC.md 實現）
+
+### 📝 待實現版本（V2 - UPDATE-1.md 規劃）
+根據用戶反饋，需要進行以下 UI/UX 改進
+
+---
+
+## V1 - 原始版本的實現
+
+### 1. **主查詢欄 (/terms API)** - V1
    - ✅ 即時建議（debounce 250ms, minLength 2）
+   - ✅ Ghost suggestion 在輸入框下方
    - ✅ Tab 接受 ghost suggestion（不提交）
    - ✅ Arrow keys 鍵盤導航
    - ✅ Enter 提交查詢
    - ✅ Copy 按鈕複製詞彙
    - ✅ 點擊建議項目替換並添加空格
 
-2. **運算子選擇器 IME 功能**
-   - ✅ Space 後顯示運算子選擇器
+### 2. **運算子選擇器** - V1
+   - ✅ Space 後顯示運算子選擇器（inline 灰色框）
    - ✅ Arrow Up/Down 切換運算子 (space/AND/OR/NOT)
    - ✅ Enter/Tab 確認選擇
    - ✅ Esc 取消（保留空格）
    - ✅ 繼續輸入隱藏選擇器
 
-3. **左側單詞查詢欄 (/terms API)**
+### 3. **左側單詞查詢欄 (/terms API)** - V1
    - ✅ 即時建議（debounce 250ms, minLength 2）
+   - ✅ Ghost suggestion（帶框）
    - ✅ Tab 接受 ghost suggestion
    - ✅ Arrow keys 鍵盤導航
    - ✅ 點擊建議項目提交查詢
    - ✅ Enter 提交查詢
 
-4. **關聯詞面板 (/terms/<t1> API)**
-   - ✅ 顯示 top-10 按 co_count 排序的詞
-   - ✅ 顯示 top-10 按 jaccard 排序的詞
+### 4. **關聯詞面板 (/terms/<t1> API)** - V1
+   - ✅ 顯示雙欄（co_count 和 jaccard 各 top-10）
    - ✅ 獨立滾動兩欄
-   - ✅ Hover 顯示 co_count 和 jaccard 數值
+   - ✅ Hover 顯示數值
    - ✅ Copy 按鈕複製詞彙
    - ✅ 無關聯詞時隱藏面板
 
-5. **研究結果列表 (/query/<q_string>/studies API)**
+### 5. **研究結果列表 (/query/<q_string>/studies API)** - V1
    - ✅ 顯示結果計數和清單
    - ✅ 每項顯示標題、作者、期刊、年份
    - ✅ 點擊展開顯示 study_id 和 contrast_id
    - ✅ 無限滾動支持
-   - ✅ 虛擬化渲染（初始渲染 200 條，滾動加載）
+   - ✅ 虛擬化渲染（初始渲染 200 條）
 
-6. **錯誤處理和快取**
+### 6. **錯誤處理和快取** - V1
    - ✅ 網路錯誤顯示 toast 通知
    - ✅ Abort previous requests 避免競態
    - ✅ Debounce 250ms
    - ✅ 快取策略：terms (session), related (5min), studies (1min)
 
-### 📝 測試情況
+### 📝 V1 測試情況
 
 | 模塊 | 代碼審查 | 實際測試 | 說明 |
 | :--- | :--- | :--- | :--- |
@@ -149,6 +159,72 @@
 - ❌ Playwright 瀏覽器安裝失敗
 - ❌ 本地 HTTP 伺服器無法啟動
 - ⏳ 待在真實環境中進行集成測試
+
+---
+
+## V2 - 改進版本的計劃（UPDATE-1.md）
+
+### 待實現的改進
+
+#### 🎯 第一輪（基礎修改）
+1. **7. 移除所有 Copy 按鈕**
+   - 移除主查詢建議的 Copy 按鈕
+   - 移除關聯詞項目的 Copy 按鈕
+   - 用戶可手動選中並複製
+
+2. **3. Enter 提交時移除尾部空白**
+   - 自動 trim 查詢字符串
+   - 確保沒有多餘空白提交
+
+3. **5. 關聯詞面板改進**
+   - ✋ 改為單欄顯示（不再雙欄）
+   - 添加「按 co_count」「按 jaccard」排序按鈕
+   - 新增「Top 10 / Top 20 / Top 50」選擇按鈕
+
+#### 🎯 第二輪（核心 UI 改進）
+1. **1. Ghost Suggestion 在輸入框內（雙層設計）**
+   - Ghost suggestion 直接顯示在輸入框（類似 URL bar 自動完成）
+   - 背景層 `pointer-events: none`，前景層 `background: transparent`
+   - 實時更新：任何改動都要更新 ghost suggestion（輸入、Arrow、Click）
+
+2. **2. 建議列表改為 Google Search 風格**
+   - 改為類似 Google 搜尋的設計（貼著輸入框）
+   - 預設選中第一項（`state.mainSuggestionIndex = 0`）
+   - Arrow 循環導航（Google 行為）
+   - Hover 和 Arrow 時實時更新 ghost suggestion
+
+3. **4. 運算子選擇器改為 Google Search 風格**
+   - 貼著輸入框，不浮空
+   - 與建議列表樣式統一
+   - Space 顯示為空白，AND/OR/NOT 顯示為大寫字母
+   - 預設選中 AND
+
+#### 🎯 第三輪（增強功能）
+1. **6. Hover 顯示排名信息**
+   - Hover 時顯示：`co_count: 726 (#1 in co_count)` 和 `jaccard: 0.2835 (#2 in jaccard)`
+   - **重要**：排名基於「全部相關詞」，不是當前顯示的 Top-K
+   - 即使只顯示 Top-10，排名仍基於全部相關詞計算
+
+### V2 完成標記
+
+#### 第一輪（基礎修改）
+- [ ] 7. 移除所有 Copy 按鈕
+- [ ] 3. Enter 提交時移除尾部空白
+- [ ] 5. 關聯詞面板：單欄 + 排序按鈕 + Top-K 選擇 (10/20/50)
+
+#### 第二輪（核心 UI 改進）
+- [ ] 1. Ghost suggestion 在輸入框內（雙層設計）
+- [ ] 2. 建議列表改為 Google 搜尋風格（貼著輸入框，預設選中第一項）
+- [ ] 4. 運算子選擇器改為 Google 搜尋風格（貼著輸入框，預設選中 AND）
+
+#### 第三輪（增強功能）
+- [ ] 6. Hover 顯示排名（基於全部相關詞計算）
+
+#### 最終驗收
+- [ ] 全部功能測試驗證
+- [ ] 鍵盤交互測試
+- [ ] 鼠標交互測試
+- [ ] 邊界情況測試
 
 ---
 
