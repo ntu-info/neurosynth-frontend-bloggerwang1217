@@ -712,6 +712,8 @@ function updateSuggestionFocus(suggestions) {
   Array.from(suggestions).forEach((item, index) => {
     if (index === state.mainSuggestionIndex) {
       item.classList.add('focused');
+      // Auto-scroll to focused item
+      item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     } else {
       item.classList.remove('focused');
     }
@@ -862,6 +864,8 @@ function updateLeftSuggestionFocus(suggestions) {
   Array.from(suggestions).forEach((item, index) => {
     if (index === state.leftSuggestionIndex) {
       item.classList.add('focused');
+      // Auto-scroll to focused item
+      item.scrollIntoView({ block: 'nearest', behavior: 'smooth' });
     } else {
       item.classList.remove('focused');
     }
