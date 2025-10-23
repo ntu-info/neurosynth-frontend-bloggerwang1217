@@ -51,17 +51,12 @@ const elements = {
   mainSubmitBtn: document.getElementById('mainSubmitBtn'),
   leftSubmitBtn: document.getElementById('leftSubmitBtn'),
 
-  // UPDATE-1.md requirement 1: Ghost input layers for dual-layer design
-  ghostInput: document.getElementById('ghostInput'),
-  leftGhostInput: document.getElementById('leftGhostInput'),
 
   // Suggestions
   mainSuggestionsContainer: document.getElementById('mainSuggestionsContainer'),
   mainSuggestions: document.getElementById('mainSuggestions'),
-  ghostSuggestion: document.getElementById('ghostSuggestion'),
   leftSuggestionsContainer: document.getElementById('leftSuggestionsContainer'),
   leftSuggestions: document.getElementById('leftSuggestions'),
-  leftGhostSuggestion: document.getElementById('leftGhostSuggestion'),
 
   // Operator chooser (UPDATE-2.md)
   operatorChooserContainer: document.getElementById('operatorChooserContainer'),
@@ -147,15 +142,6 @@ function setCacheEntry(type, key, value) {
   }
 }
 
-// UPDATE-1.md requirement 1: Update ghost input with suggestion
-function updateGhostInput(inputElement, ghostElement, currentValue, suggestion) {
-  if (!suggestion || !suggestion.startsWith(currentValue)) {
-    ghostElement.textContent = currentValue;
-    return;
-  }
-  // Show the typed part + greyed out completion
-  ghostElement.textContent = suggestion;
-}
 
 // ======================
 // API Functions
@@ -263,10 +249,8 @@ function renderSuggestions(terms, container, prefix, isLeftPanel = false) {
     container.parentElement.style.display = 'none';
     if (isLeftPanel) {
       state.leftSuggestionIndex = -1;
-      elements.leftGhostSuggestion.textContent = '';
     } else {
       state.mainSuggestionIndex = -1;
-      elements.ghostSuggestion.textContent = '';
     }
     return;
   }
@@ -280,15 +264,6 @@ function renderSuggestions(terms, container, prefix, isLeftPanel = false) {
     state.mainSuggestionIndex = 0;
   }
 
-  // Show ghost suggestion (display in ghost input layer)
-  if (filtered.length > 0) {
-    const ghostTerm = filtered[0];
-    if (isLeftPanel) {
-      updateGhostInput(elements.leftInput, elements.leftGhostInput, prefix, ghostTerm);
-    } else {
-      updateGhostInput(elements.mainInput, elements.ghostInput, prefix, ghostTerm);
-    }
-  }
 
   // Render suggestion items
   filtered.forEach((term, index) => {
@@ -314,14 +289,12 @@ function renderSuggestions(terms, container, prefix, isLeftPanel = false) {
       selectSuggestion(term, isLeftPanel);
     });
 
-    // UPDATE-1.md requirement 2: Update ghost suggestion on hover
+    // Update suggestion focus on hover
     li.addEventListener('mouseenter', () => {
       if (isLeftPanel) {
         state.leftSuggestionIndex = index;
-        updateGhostInput(elements.leftInput, elements.leftGhostInput, prefix, term);
       } else {
         state.mainSuggestionIndex = index;
-        updateGhostInput(elements.mainInput, elements.ghostInput, prefix, term);
       }
       updateSuggestionFocus(container);
     });
@@ -356,14 +329,8 @@ function hideSuggestions(isLeftPanel) {
   container.style.display = 'none';
   if (isLeftPanel) {
     state.leftSuggestionIndex = -1;
-    elements.leftGhostSuggestion.textContent = '';
-    // UPDATE-1.md requirement 1: Clear ghost input layer
-    elements.leftGhostInput.textContent = '';
   } else {
     state.mainSuggestionIndex = -1;
-    elements.ghostSuggestion.textContent = '';
-    // UPDATE-1.md requirement 1: Clear ghost input layer
-    elements.ghostInput.textContent = '';
   }
 }
 
@@ -639,43 +606,15 @@ function handleMainKeydown(e) {
   const suggestions = elements.mainSuggestions.children;
   const suggestionVisible = elements.mainSuggestionsContainer.style.display !== 'none';
 
-  if (e.key === 'Tab' && suggestionVisible && elements.ghostInput.textContent) {
-    e.preventDefault();
-    // UPDATE-1.md requirement 1: Accept ghost suggestion from ghost input layer
-    const ghostText = elements.ghostInput.textContent;
-    const cursorPos = elements.mainInput.selectionStart;
-    const lastSpaceIndex = elements.mainInput.value.lastIndexOf(' ', cursorPos - 1);
-    const before = elements.mainInput.value.substring(0, lastSpaceIndex + 1);
-    elements.mainInput.value = before + ghostText;
-    elements.mainInput.focus();
-    elements.mainInput.setSelectionRange(before.length + ghostText.length, before.length + ghostText.length);
-    state.mainInput = elements.mainInput.value;
-    handleMainInput();
-  } else if (e.key === 'ArrowDown' && suggestionVisible) {
+  if (e.key === 'ArrowDown' && suggestionVisible) {
     e.preventDefault();
     // UPDATE-1.md requirement 2: Cycling arrow navigation (Google behavior)
     state.mainSuggestionIndex = (state.mainSuggestionIndex + 1) % suggestions.length;
-    // UPDATE-1.md requirement 2: Update ghost suggestion on arrow key
-    const selectedTerm = suggestions[state.mainSuggestionIndex].textContent
-      .split('Copy')[0]
-      .trim();
-    const cursorPos = elements.mainInput.selectionStart;
-    const lastSpaceIndex = elements.mainInput.value.lastIndexOf(' ', cursorPos - 1);
-    const currentWord = elements.mainInput.value.substring(lastSpaceIndex + 1, cursorPos);
-    updateGhostInput(elements.mainInput, elements.ghostInput, currentWord, selectedTerm);
     updateSuggestionFocus(suggestions);
   } else if (e.key === 'ArrowUp' && suggestionVisible) {
     e.preventDefault();
     // UPDATE-1.md requirement 2: Cycling arrow navigation (Google behavior)
     state.mainSuggestionIndex = (state.mainSuggestionIndex - 1 + suggestions.length) % suggestions.length;
-    // UPDATE-1.md requirement 2: Update ghost suggestion on arrow key
-    const selectedTerm = suggestions[state.mainSuggestionIndex].textContent
-      .split('Copy')[0]
-      .trim();
-    const cursorPos = elements.mainInput.selectionStart;
-    const lastSpaceIndex = elements.mainInput.value.lastIndexOf(' ', cursorPos - 1);
-    const currentWord = elements.mainInput.value.substring(lastSpaceIndex + 1, cursorPos);
-    updateGhostInput(elements.mainInput, elements.ghostInput, currentWord, selectedTerm);
     updateSuggestionFocus(suggestions);
   } else if (e.key === 'Enter') {
     e.preventDefault();
@@ -834,29 +773,8 @@ function handleLeftKeydown(e) {
   const suggestions = elements.leftSuggestions.children;
   const suggestionVisible = elements.leftSuggestionsContainer.style.display !== 'none';
 
-  if (e.key === 'Tab' && suggestionVisible && elements.leftGhostInput.textContent) {
-    e.preventDefault();
-    // Accept ghost suggestion from ghost input layer
-    const ghostText = elements.leftGhostInput.textContent;
-    elements.leftInput.value = ghostText;
-    elements.leftInput.focus();
-  } else if (e.key === 'ArrowDown' && suggestionVisible) {
-    e.preventDefault();
-    // UPDATE-1.md requirement 2: Cycling arrow navigation (Google behavior)
-    state.leftSuggestionIndex = (state.leftSuggestionIndex + 1) % suggestions.length;
-    // UPDATE-1.md requirement 2: Update ghost suggestion on arrow key
-    const selectedTerm = suggestions[state.leftSuggestionIndex].textContent.trim();
-    updateGhostInput(elements.leftInput, elements.leftGhostInput, elements.leftInput.value, selectedTerm);
-    updateLeftSuggestionFocus(suggestions);
-  } else if (e.key === 'ArrowUp' && suggestionVisible) {
-    e.preventDefault();
-    // UPDATE-1.md requirement 2: Cycling arrow navigation (Google behavior)
-    state.leftSuggestionIndex = (state.leftSuggestionIndex - 1 + suggestions.length) % suggestions.length;
-    // UPDATE-1.md requirement 2: Update ghost suggestion on arrow key
-    const selectedTerm = suggestions[state.leftSuggestionIndex].textContent.trim();
-    updateGhostInput(elements.leftInput, elements.leftGhostInput, elements.leftInput.value, selectedTerm);
-    updateLeftSuggestionFocus(suggestions);
-  } else if (e.key === 'Enter') {
+  if (e.key === 'Enter') {
+    // Handle Enter key separately to ensure it always works
     e.preventDefault();
     if (suggestionVisible && state.leftSuggestionIndex >= 0) {
       // Select and submit
@@ -864,9 +782,19 @@ function handleLeftKeydown(e) {
       elements.leftInput.value = selectedText;
       submitLeftQuery();
     } else {
-      // Submit current
+      // Submit current input
       submitLeftQuery();
     }
+  } else if (e.key === 'ArrowDown' && suggestionVisible) {
+    e.preventDefault();
+    // UPDATE-1.md requirement 2: Cycling arrow navigation (Google behavior)
+    state.leftSuggestionIndex = (state.leftSuggestionIndex + 1) % suggestions.length;
+    updateLeftSuggestionFocus(suggestions);
+  } else if (e.key === 'ArrowUp' && suggestionVisible) {
+    e.preventDefault();
+    // UPDATE-1.md requirement 2: Cycling arrow navigation (Google behavior)
+    state.leftSuggestionIndex = (state.leftSuggestionIndex - 1 + suggestions.length) % suggestions.length;
+    updateLeftSuggestionFocus(suggestions);
   }
 }
 

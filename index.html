@@ -20,9 +20,8 @@
       <aside class="left-panel">
         <h2>Search by Term</h2>
         <div class="input-group">
-          <!-- Dual-layer ghost suggestion design (UPDATE-1.md requirement 1) -->
+          <!-- Search by Term Input -->
           <div class="input-wrapper">
-            <div id="leftGhostInput" class="ghost-input" aria-hidden="true"></div>
             <input
               id="leftInput"
               type="text"
@@ -34,7 +33,6 @@
             />
             <!-- Left Suggestions (nested for Google-style positioning) -->
             <div id="leftSuggestionsContainer" class="suggestions-container" style="display: none;">
-              <div id="leftGhostSuggestion" class="ghost-suggestion"></div>
               <ul
                 id="leftSuggestions"
                 class="suggestions-list"
@@ -71,9 +69,8 @@
       <main class="right-panel">
         <h2>Complex Query</h2>
         <div class="input-group">
-          <!-- Dual-layer ghost suggestion design (UPDATE-1.md requirement 1) -->
+          <!-- Complex Query Input -->
           <div class="input-wrapper">
-            <div id="ghostInput" class="ghost-input" aria-hidden="true"></div>
             <input
               id="mainInput"
               type="text"
