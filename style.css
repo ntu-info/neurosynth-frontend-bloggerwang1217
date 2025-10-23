@@ -7,7 +7,7 @@
 
 body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
+  background: linear-gradient(135deg, #f9f5f7 0%, #f5eff2 100%);
   min-height: 100vh;
   padding: 20px;
 }
@@ -87,7 +87,7 @@ body {
   color: #2c3e50;
   font-size: 20px;
   margin-bottom: 20px;
-  border-bottom: 2px solid #3498db;
+  border-bottom: 2px solid #e56ba8;
   padding-bottom: 10px;
 }
 
@@ -125,13 +125,13 @@ body {
 }
 
 .input-field:focus {
-  border-color: #3498db;
-  box-shadow: 0 0 0 3px rgba(52, 152, 219, 0.1);
+  border-color: #e56ba8;
+  box-shadow: 0 0 0 3px rgba(233, 30, 99, 0.1);
 }
 
 .submit-btn {
   padding: 12px 25px;
-  background: #3498db;
+  background: #e56ba8;
   color: white;
   border: none;
   border-radius: 6px;
@@ -142,9 +142,9 @@ body {
 }
 
 .submit-btn:hover {
-  background: #2980b9;
+  background: #d94a8a;
   transform: translateY(-2px);
-  box-shadow: 0 4px 12px rgba(52, 152, 219, 0.3);
+  box-shadow: 0 4px 12px rgba(233, 30, 99, 0.3);
 }
 
 .submit-btn:active {
@@ -189,12 +189,12 @@ body {
 }
 
 .suggestion-item:hover {
-  background: #f0f7ff;
+  background: #f9f5f7;
   color: #2c3e50;
 }
 
 .suggestion-item.focused {
-  background: #3498db;
+  background: #e56ba8;
   color: white;
 }
 
@@ -209,7 +209,7 @@ body {
 
 .copy-btn {
   padding: 6px 12px;
-  background: #27ae60;
+  background: #e56ba8;
   color: white;
   border: none;
   border-radius: 4px;
@@ -221,7 +221,7 @@ body {
 }
 
 .copy-btn:hover {
-  background: #229954;
+  background: #d94a8a;
 }
 
 /* Operator Chooser (UPDATE-2.md requirement 4: Google Search style) */
@@ -259,12 +259,12 @@ body {
 }
 
 .operator-item:hover {
-  background: #f0f7ff;
+  background: #f9f5f7;
   color: #2c3e50;
 }
 
 .operator-item.focused {
-  background: #3498db;
+  background: #e56ba8;
   color: white;
 }
 
@@ -311,15 +311,15 @@ body {
 
 .sort-btn:hover,
 .topk-btn:hover {
-  border-color: #3498db;
-  background: #f0f7ff;
+  border-color: #e56ba8;
+  background: #f9f5f7;
 }
 
 .sort-btn.active,
 .topk-btn.active {
-  background: #3498db;
+  background: #e56ba8;
   color: white;
-  border-color: #3498db;
+  border-color: #e56ba8;
 }
 
 .topk-buttons span {
@@ -381,7 +381,7 @@ body {
 
 .related-copy-btn {
   padding: 6px 12px;
-  background: #27ae60;
+  background: #e56ba8;
   color: white;
   border: none;
   border-radius: 4px;
@@ -393,7 +393,7 @@ body {
 }
 
 .related-copy-btn:hover {
-  background: #229954;
+  background: #d94a8a;
 }
 
 /* Results Section */
@@ -425,9 +425,9 @@ body {
 }
 
 .result-item:hover {
-  border-color: #3498db;
+  border-color: #e56ba8;
   background: white;
-  box-shadow: 0 2px 8px rgba(52, 152, 219, 0.2);
+  box-shadow: 0 2px 8px rgba(233, 30, 99, 0.2);
 }
 
 .result-title {
@@ -461,7 +461,7 @@ body {
 
 .result-item.expanded {
   background: white;
-  border-color: #3498db;
+  border-color: #e56ba8;
 }
 
 /* Error Messages */
@@ -502,7 +502,7 @@ body {
 .loading-indicator {
   text-align: center;
   padding: 20px;
-  color: #3498db;
+  color: #e56ba8;
   font-size: 14px;
   animation: breathe 2s ease-in-out infinite;
 }
@@ -558,7 +558,7 @@ body {
 }
 
 .toast.success {
-  background: #27ae60;
+  background: #e56ba8;
 }
 
 .toast.error {
@@ -566,7 +566,7 @@ body {
 }
 
 .toast.info {
-  background: #3498db;
+  background: #e56ba8;
 }
 
 @keyframes slideIn {
