@@ -65,6 +65,9 @@ const elements = {
   // Related panel
   relatedPanel: document.getElementById('relatedPanel'),
   relatedList: document.getElementById('relatedList'),
+  relatedLoading: document.getElementById('relatedLoading'),
+  relatedControls: document.getElementById('relatedControls'),
+  relatedListContainer: document.getElementById('relatedListContainer'),
   sortByCoCountBtn: document.getElementById('sortByCoCountBtn'),
   sortByJaccardBtn: document.getElementById('sortByJaccardBtn'),
   topk10Btn: document.getElementById('topk10Btn'),
@@ -368,7 +371,6 @@ function renderRelatedTerms(related, sortBy = 'co_count', topK = 10) {
     return;
   }
 
-  elements.relatedPanel.style.display = 'block';
   state.leftResults = related;
   state.relatedSortBy = sortBy;
   state.relatedTopK = topK;
@@ -405,6 +407,10 @@ function renderRelatedTerms(related, sortBy = 'co_count', topK = 10) {
   elements.topk10Btn.classList.toggle('active', topK === 10);
   elements.topk20Btn.classList.toggle('active', topK === 20);
   elements.topk50Btn.classList.toggle('active', topK === 50);
+
+  // Show controls and list after rendering is complete
+  elements.relatedControls.style.display = 'flex';
+  elements.relatedListContainer.style.display = 'block';
 }
 
 function createRelatedTermElement(item, coCountRanks, jaccardRanks) {
@@ -423,17 +429,22 @@ function createRelatedTermElement(item, coCountRanks, jaccardRanks) {
   scoresDiv.className = 'related-item-scores';
 
   // UPDATE-2.md requirement 2: Show ranking based on all related terms
-  let scoreText = `co_count: ${item.co_count}`;
+  let coCountText = `co_count: ${item.co_count}`;
   if (coCountRanks && coCountRanks.has(item.term)) {
-    scoreText += ` (#${coCountRanks.get(item.term)} for co_count)`;
-  }
-  scoreText += `, jaccard: ${item.jaccard.toFixed(4)}`;
-  if (jaccardRanks && jaccardRanks.has(item.term)) {
-    scoreText += ` (#${jaccardRanks.get(item.term)} for jaccard)`;
+    coCountText += ` (#${coCountRanks.get(item.term)} for co_count)`;
   }
 
-  scoresDiv.textContent = scoreText;
-  scoresDiv.title = scoreText; // Also set as tooltip
+  let jaccardText = `jaccard: ${item.jaccard.toFixed(4)}`;
+  if (jaccardRanks && jaccardRanks.has(item.term)) {
+    jaccardText += ` (#${jaccardRanks.get(item.term)} for jaccard)`;
+  }
+
+  // Set text content with HTML to show rankings on separate lines
+  scoresDiv.innerHTML = `${coCountText}<br>${jaccardText}`;
+
+  // Also set as tooltip with both lines
+  const tooltipText = `${coCountText}\n${jaccardText}`;
+  scoresDiv.title = tooltipText;
 
   infoDiv.appendChild(termDiv);
   infoDiv.appendChild(scoresDiv);
@@ -455,7 +466,6 @@ function renderResults(data) {
     return;
   }
 
-  elements.resultsSection.style.display = 'block';
   state.resultsData = data.results;
   state.resultsTotal = data.count;
 
@@ -467,6 +477,8 @@ function renderResults(data) {
       `<div style="padding: 20px; text-align: center; color: #7f8c8d;">
       No results found for "${state.currentQuery}". Try a different search.
       </div>`;
+    // Show results section even for no results
+    elements.resultsSection.style.display = 'block';
     return;
   }
 
@@ -477,6 +489,9 @@ function renderResults(data) {
 
   // Setup infinite scroll
   setupInfiniteScroll();
+
+  // Show results section after rendering is complete
+  elements.resultsSection.style.display = 'block';
 }
 
 function createResultElement(result) {
@@ -737,8 +752,12 @@ async function submitMainQuery() {
   // UPDATE-1.md requirement 3: Remove trailing whitespace
   state.currentQuery = query;
   elements.mainInput.value = query; // Also update the input field
+
+  // Show loading indicator, hide results
+  elements.resultsSection.style.display = 'block';
   elements.resultsLoading.style.display = 'block';
   elements.resultsList.innerHTML = '';
+  elements.resultsError.style.display = 'none';
 
   const result = await fetchStudies(query);
   elements.resultsLoading.style.display = 'none';
@@ -816,7 +835,17 @@ async function submitLeftQuery() {
   }
 
   hideSuggestions(true);
+
+  // Show only loading indicator, hide controls and list
+  elements.relatedPanel.style.display = 'block';
+  elements.relatedLoading.style.display = 'block';
+  elements.relatedControls.style.display = 'none';
+  elements.relatedListContainer.style.display = 'none';
+
   const related = await fetchRelatedTerms(term);
+
+  // Hide loading and render results
+  elements.relatedLoading.style.display = 'none';
   renderRelatedTerms(related);
 }
 
