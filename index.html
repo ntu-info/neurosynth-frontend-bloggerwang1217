@@ -20,45 +20,49 @@
       <aside class="left-panel">
         <h2>Search by Term</h2>
         <div class="input-group">
-          <input
-            id="leftInput"
-            type="text"
-            placeholder="Enter a single term..."
-            class="input-field"
-            aria-label="Single term search"
-            aria-autocomplete="list"
-            aria-controls="leftSuggestions"
-          />
+          <!-- Dual-layer ghost suggestion design (UPDATE-1.md requirement 1) -->
+          <div class="input-wrapper">
+            <div id="leftGhostInput" class="ghost-input" aria-hidden="true"></div>
+            <input
+              id="leftInput"
+              type="text"
+              placeholder="Enter a single term..."
+              class="input-field"
+              aria-label="Single term search"
+              aria-autocomplete="list"
+              aria-controls="leftSuggestions"
+            />
+            <!-- Left Suggestions (nested for Google-style positioning) -->
+            <div id="leftSuggestionsContainer" class="suggestions-container" style="display: none;">
+              <div id="leftGhostSuggestion" class="ghost-suggestion"></div>
+              <ul
+                id="leftSuggestions"
+                class="suggestions-list"
+                role="listbox"
+                aria-label="Term suggestions"
+              ></ul>
+            </div>
+          </div>
           <button id="leftSubmitBtn" class="submit-btn">Search</button>
-        </div>
-
-        <!-- Left Suggestions -->
-        <div id="leftSuggestionsContainer" class="suggestions-container" style="display: none;">
-          <div id="leftGhostSuggestion" class="ghost-suggestion"></div>
-          <ul
-            id="leftSuggestions"
-            class="suggestions-list"
-            role="listbox"
-            aria-label="Term suggestions"
-          ></ul>
         </div>
 
         <!-- Related Terms Panel -->
         <div id="relatedPanel" class="related-panel" style="display: none;">
           <h3>Related Terms</h3>
-          <div class="related-columns">
-            <div class="related-column">
-              <h4>By Co-Count</h4>
-              <div class="related-list-container">
-                <ul id="relatedByCoCount" class="related-list" role="listbox"></ul>
-              </div>
+          <div class="related-controls">
+            <div class="sort-buttons">
+              <button id="sortByCoCountBtn" class="sort-btn active">按 co_count</button>
+              <button id="sortByJaccardBtn" class="sort-btn">按 jaccard</button>
             </div>
-            <div class="related-column">
-              <h4>By Jaccard</h4>
-              <div class="related-list-container">
-                <ul id="relatedByJaccard" class="related-list" role="listbox"></ul>
-              </div>
+            <div class="topk-buttons">
+              <span>顯示:</span>
+              <button id="topk10Btn" class="topk-btn active">Top 10</button>
+              <button id="topk20Btn" class="topk-btn">Top 20</button>
+              <button id="topk50Btn" class="topk-btn">Top 50</button>
             </div>
+          </div>
+          <div class="related-list-container">
+            <ul id="relatedList" class="related-list" role="listbox"></ul>
           </div>
         </div>
       </aside>
@@ -67,32 +71,35 @@
       <main class="right-panel">
         <h2>Complex Query</h2>
         <div class="input-group">
-          <input
-            id="mainInput"
-            type="text"
-            placeholder="Enter query (e.g., 'amygdala AND emotion')..."
-            class="input-field"
-            aria-label="Complex query search"
-            aria-autocomplete="list"
-            aria-controls="mainSuggestions"
-          />
+          <!-- Dual-layer ghost suggestion design (UPDATE-1.md requirement 1) -->
+          <div class="input-wrapper">
+            <div id="ghostInput" class="ghost-input" aria-hidden="true"></div>
+            <input
+              id="mainInput"
+              type="text"
+              placeholder="Enter query (e.g., 'amygdala AND emotion')..."
+              class="input-field"
+              aria-label="Complex query search"
+              aria-autocomplete="list"
+              aria-controls="mainSuggestions"
+            />
+            <!-- Main Suggestions (nested for Google-style positioning) -->
+            <div id="mainSuggestionsContainer" class="suggestions-container" style="display: none;">
+              <div id="ghostSuggestion" class="ghost-suggestion"></div>
+              <ul
+                id="mainSuggestions"
+                class="suggestions-list"
+                role="listbox"
+                aria-label="Query suggestions"
+              ></ul>
+            </div>
+          </div>
           <button id="mainSubmitBtn" class="submit-btn">Search</button>
         </div>
 
         <!-- Operator IME Chooser -->
         <div id="operatorChooser" class="operator-chooser" style="display: none;">
           <span id="operatorIndicator" class="operator-indicator">AND</span>
-        </div>
-
-        <!-- Main Suggestions -->
-        <div id="mainSuggestionsContainer" class="suggestions-container" style="display: none;">
-          <div id="ghostSuggestion" class="ghost-suggestion"></div>
-          <ul
-            id="mainSuggestions"
-            class="suggestions-list"
-            role="listbox"
-            aria-label="Query suggestions"
-          ></ul>
         </div>
 
         <!-- Results Section -->

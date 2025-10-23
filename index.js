@@ -38,6 +38,9 @@ const state = {
   resultsTotal: 0,
   currentQuery: '',
   operatorChooserActive: false,
+  // UPDATE-1.md requirement 5: Related terms sorting and Top-K
+  relatedSortBy: 'co_count',
+  relatedTopK: 10,
 };
 
 // DOM Elements
@@ -47,6 +50,10 @@ const elements = {
   leftInput: document.getElementById('leftInput'),
   mainSubmitBtn: document.getElementById('mainSubmitBtn'),
   leftSubmitBtn: document.getElementById('leftSubmitBtn'),
+
+  // UPDATE-1.md requirement 1: Ghost input layers for dual-layer design
+  ghostInput: document.getElementById('ghostInput'),
+  leftGhostInput: document.getElementById('leftGhostInput'),
 
   // Suggestions
   mainSuggestionsContainer: document.getElementById('mainSuggestionsContainer'),
@@ -62,8 +69,12 @@ const elements = {
 
   // Related panel
   relatedPanel: document.getElementById('relatedPanel'),
-  relatedByCoCount: document.getElementById('relatedByCoCount'),
-  relatedByJaccard: document.getElementById('relatedByJaccard'),
+  relatedList: document.getElementById('relatedList'),
+  sortByCoCountBtn: document.getElementById('sortByCoCountBtn'),
+  sortByJaccardBtn: document.getElementById('sortByJaccardBtn'),
+  topk10Btn: document.getElementById('topk10Btn'),
+  topk20Btn: document.getElementById('topk20Btn'),
+  topk50Btn: document.getElementById('topk50Btn'),
 
   // Results
   resultsSection: document.getElementById('resultsSection'),
@@ -134,6 +145,16 @@ function setCacheEntry(type, key, value) {
   if (cache.timestamps[type]) {
     cache.timestamps[type].set(key, Date.now());
   }
+}
+
+// UPDATE-1.md requirement 1: Update ghost input with suggestion
+function updateGhostInput(inputElement, ghostElement, currentValue, suggestion) {
+  if (!suggestion || !suggestion.startsWith(currentValue)) {
+    ghostElement.textContent = currentValue;
+    return;
+  }
+  // Show the typed part + greyed out completion
+  ghostElement.textContent = suggestion;
 }
 
 // ======================
@@ -252,12 +273,20 @@ function renderSuggestions(terms, container, prefix, isLeftPanel = false) {
 
   container.parentElement.style.display = 'block';
 
-  // Show ghost suggestion
+  // UPDATE-1.md requirement 2: Pre-select first item (set index to 0, not -1)
+  if (isLeftPanel) {
+    state.leftSuggestionIndex = 0;
+  } else {
+    state.mainSuggestionIndex = 0;
+  }
+
+  // Show ghost suggestion (display in ghost input layer)
   if (filtered.length > 0) {
+    const ghostTerm = filtered[0];
     if (isLeftPanel) {
-      elements.leftGhostSuggestion.textContent = filtered[0];
+      updateGhostInput(elements.leftInput, elements.leftGhostInput, prefix, ghostTerm);
     } else {
-      elements.ghostSuggestion.textContent = filtered[0];
+      updateGhostInput(elements.mainInput, elements.ghostInput, prefix, ghostTerm);
     }
   }
 
@@ -266,6 +295,7 @@ function renderSuggestions(terms, container, prefix, isLeftPanel = false) {
     const li = document.createElement('li');
     li.role = 'option';
     li.className = 'suggestion-item';
+    // UPDATE-1.md requirement 2: Pre-select first item (index 0)
     if (
       (isLeftPanel && index === state.leftSuggestionIndex) ||
       (!isLeftPanel && index === state.mainSuggestionIndex)
@@ -278,35 +308,26 @@ function renderSuggestions(terms, container, prefix, isLeftPanel = false) {
     textSpan.innerHTML = highlightPrefix(term, prefix);
     li.appendChild(textSpan);
 
-    // Copy button (visible only in left panel suggestions, not main query suggestions)
-    // According to spec: Copy buttons only appear in left side related terms, not in suggestion lists
-    // Actually re-reading: Copy in suggestion list for main query (2.7), but NOT in left suggestions
-    // Let me re-check: section 2.7 says "Copy" appears in "主查詢欄的建議列表"
-    // Let me add copy button only for main suggestions
-    if (!isLeftPanel) {
-      const copyBtn = document.createElement('button');
-      copyBtn.className = 'copy-btn';
-      copyBtn.textContent = 'Copy';
-      copyBtn.addEventListener('click', (e) => {
-        e.stopPropagation();
-        copyToClipboard(term);
-      });
-      li.appendChild(copyBtn);
-    }
+    // Copy buttons removed (UPDATE-1.md requirement 7)
 
     li.addEventListener('click', () => {
       selectSuggestion(term, isLeftPanel);
     });
 
+    // UPDATE-1.md requirement 2: Update ghost suggestion on hover
+    li.addEventListener('mouseenter', () => {
+      if (isLeftPanel) {
+        state.leftSuggestionIndex = index;
+        updateGhostInput(elements.leftInput, elements.leftGhostInput, prefix, term);
+      } else {
+        state.mainSuggestionIndex = index;
+        updateGhostInput(elements.mainInput, elements.ghostInput, prefix, term);
+      }
+      updateSuggestionFocus(container);
+    });
+
     container.appendChild(li);
   });
-
-  // Reset focus index when rendering
-  if (isLeftPanel) {
-    state.leftSuggestionIndex = -1;
-  } else {
-    state.mainSuggestionIndex = -1;
-  }
 }
 
 function selectSuggestion(term, isLeftPanel) {
@@ -336,9 +357,13 @@ function hideSuggestions(isLeftPanel) {
   if (isLeftPanel) {
     state.leftSuggestionIndex = -1;
     elements.leftGhostSuggestion.textContent = '';
+    // UPDATE-1.md requirement 1: Clear ghost input layer
+    elements.leftGhostInput.textContent = '';
   } else {
     state.mainSuggestionIndex = -1;
     elements.ghostSuggestion.textContent = '';
+    // UPDATE-1.md requirement 1: Clear ghost input layer
+    elements.ghostInput.textContent = '';
   }
 }
 
@@ -370,7 +395,7 @@ function copyToClipboard(text) {
 // Related Terms Rendering
 // ======================
 
-function renderRelatedTerms(related) {
+function renderRelatedTerms(related, sortBy = 'co_count', topK = 10) {
   if (!related || related.length === 0) {
     elements.relatedPanel.style.display = 'none';
     return;
@@ -378,24 +403,28 @@ function renderRelatedTerms(related) {
 
   elements.relatedPanel.style.display = 'block';
   state.leftResults = related;
+  state.relatedSortBy = sortBy;
+  state.relatedTopK = topK;
 
-  // Sort by co_count (descending)
-  const byCoCount = [...related].sort((a, b) => b.co_count - a.co_count).slice(0, 10);
+  // UPDATE-1.md requirement 5: Sort by selected method and slice to topK
+  const sorted = [...related].sort((a, b) =>
+    sortBy === 'co_count'
+      ? b.co_count - a.co_count
+      : b.jaccard - a.jaccard
+  ).slice(0, topK);
 
-  // Sort by jaccard (descending)
-  const byJaccard = [...related].sort((a, b) => b.jaccard - a.jaccard).slice(0, 10);
-
-  // Render co_count column
-  elements.relatedByCoCount.innerHTML = '';
-  byCoCount.forEach((item) => {
-    elements.relatedByCoCount.appendChild(createRelatedTermElement(item));
+  // Render single column
+  elements.relatedList.innerHTML = '';
+  sorted.forEach((item) => {
+    elements.relatedList.appendChild(createRelatedTermElement(item));
   });
 
-  // Render jaccard column
-  elements.relatedByJaccard.innerHTML = '';
-  byJaccard.forEach((item) => {
-    elements.relatedByJaccard.appendChild(createRelatedTermElement(item));
-  });
+  // Update button states
+  elements.sortByCoCountBtn.classList.toggle('active', sortBy === 'co_count');
+  elements.sortByJaccardBtn.classList.toggle('active', sortBy === 'jaccard');
+  elements.topk10Btn.classList.toggle('active', topK === 10);
+  elements.topk20Btn.classList.toggle('active', topK === 20);
+  elements.topk50Btn.classList.toggle('active', topK === 50);
 }
 
 function createRelatedTermElement(item) {
@@ -417,16 +446,9 @@ function createRelatedTermElement(item) {
   infoDiv.appendChild(termDiv);
   infoDiv.appendChild(scoresDiv);
 
-  const copyBtn = document.createElement('button');
-  copyBtn.className = 'related-copy-btn';
-  copyBtn.textContent = 'Copy';
-  copyBtn.addEventListener('click', (e) => {
-    e.stopPropagation();
-    copyToClipboard(item.term);
-  });
+  // Copy button removed (UPDATE-1.md requirement 7)
 
   li.appendChild(infoDiv);
-  li.appendChild(copyBtn);
 
   return li;
 }
@@ -592,10 +614,10 @@ function handleMainKeydown(e) {
   const suggestions = elements.mainSuggestions.children;
   const suggestionVisible = elements.mainSuggestionsContainer.style.display !== 'none';
 
-  if (e.key === 'Tab' && suggestionVisible && elements.ghostSuggestion.textContent) {
+  if (e.key === 'Tab' && suggestionVisible && elements.ghostInput.textContent) {
     e.preventDefault();
-    // Accept ghost suggestion
-    const ghostText = elements.ghostSuggestion.textContent;
+    // UPDATE-1.md requirement 1: Accept ghost suggestion from ghost input layer
+    const ghostText = elements.ghostInput.textContent;
     const cursorPos = elements.mainInput.selectionStart;
     const lastSpaceIndex = elements.mainInput.value.lastIndexOf(' ', cursorPos - 1);
     const before = elements.mainInput.value.substring(0, lastSpaceIndex + 1);
@@ -606,14 +628,29 @@ function handleMainKeydown(e) {
     handleMainInput();
   } else if (e.key === 'ArrowDown' && suggestionVisible) {
     e.preventDefault();
-    state.mainSuggestionIndex = Math.min(
-      state.mainSuggestionIndex + 1,
-      suggestions.length - 1
-    );
+    // UPDATE-1.md requirement 2: Cycling arrow navigation (Google behavior)
+    state.mainSuggestionIndex = (state.mainSuggestionIndex + 1) % suggestions.length;
+    // UPDATE-1.md requirement 2: Update ghost suggestion on arrow key
+    const selectedTerm = suggestions[state.mainSuggestionIndex].textContent
+      .split('Copy')[0]
+      .trim();
+    const cursorPos = elements.mainInput.selectionStart;
+    const lastSpaceIndex = elements.mainInput.value.lastIndexOf(' ', cursorPos - 1);
+    const currentWord = elements.mainInput.value.substring(lastSpaceIndex + 1, cursorPos);
+    updateGhostInput(elements.mainInput, elements.ghostInput, currentWord, selectedTerm);
     updateSuggestionFocus(suggestions);
   } else if (e.key === 'ArrowUp' && suggestionVisible) {
     e.preventDefault();
-    state.mainSuggestionIndex = Math.max(state.mainSuggestionIndex - 1, -1);
+    // UPDATE-1.md requirement 2: Cycling arrow navigation (Google behavior)
+    state.mainSuggestionIndex = (state.mainSuggestionIndex - 1 + suggestions.length) % suggestions.length;
+    // UPDATE-1.md requirement 2: Update ghost suggestion on arrow key
+    const selectedTerm = suggestions[state.mainSuggestionIndex].textContent
+      .split('Copy')[0]
+      .trim();
+    const cursorPos = elements.mainInput.selectionStart;
+    const lastSpaceIndex = elements.mainInput.value.lastIndexOf(' ', cursorPos - 1);
+    const currentWord = elements.mainInput.value.substring(lastSpaceIndex + 1, cursorPos);
+    updateGhostInput(elements.mainInput, elements.ghostInput, currentWord, selectedTerm);
     updateSuggestionFocus(suggestions);
   } else if (e.key === 'Enter') {
     e.preventDefault();
@@ -698,7 +735,9 @@ async function submitMainQuery() {
     return;
   }
 
+  // UPDATE-1.md requirement 3: Remove trailing whitespace
   state.currentQuery = query;
+  elements.mainInput.value = query; // Also update the input field
   elements.resultsLoading.style.display = 'block';
   elements.resultsList.innerHTML = '';
 
@@ -735,22 +774,27 @@ function handleLeftKeydown(e) {
   const suggestions = elements.leftSuggestions.children;
   const suggestionVisible = elements.leftSuggestionsContainer.style.display !== 'none';
 
-  if (e.key === 'Tab' && suggestionVisible && elements.leftGhostSuggestion.textContent) {
+  if (e.key === 'Tab' && suggestionVisible && elements.leftGhostInput.textContent) {
     e.preventDefault();
-    // Accept ghost suggestion
-    const ghostText = elements.leftGhostSuggestion.textContent;
+    // Accept ghost suggestion from ghost input layer
+    const ghostText = elements.leftGhostInput.textContent;
     elements.leftInput.value = ghostText;
     elements.leftInput.focus();
   } else if (e.key === 'ArrowDown' && suggestionVisible) {
     e.preventDefault();
-    state.leftSuggestionIndex = Math.min(
-      state.leftSuggestionIndex + 1,
-      suggestions.length - 1
-    );
+    // UPDATE-1.md requirement 2: Cycling arrow navigation (Google behavior)
+    state.leftSuggestionIndex = (state.leftSuggestionIndex + 1) % suggestions.length;
+    // UPDATE-1.md requirement 2: Update ghost suggestion on arrow key
+    const selectedTerm = suggestions[state.leftSuggestionIndex].textContent.trim();
+    updateGhostInput(elements.leftInput, elements.leftGhostInput, elements.leftInput.value, selectedTerm);
     updateLeftSuggestionFocus(suggestions);
   } else if (e.key === 'ArrowUp' && suggestionVisible) {
     e.preventDefault();
-    state.leftSuggestionIndex = Math.max(state.leftSuggestionIndex - 1, -1);
+    // UPDATE-1.md requirement 2: Cycling arrow navigation (Google behavior)
+    state.leftSuggestionIndex = (state.leftSuggestionIndex - 1 + suggestions.length) % suggestions.length;
+    // UPDATE-1.md requirement 2: Update ghost suggestion on arrow key
+    const selectedTerm = suggestions[state.leftSuggestionIndex].textContent.trim();
+    updateGhostInput(elements.leftInput, elements.leftGhostInput, elements.leftInput.value, selectedTerm);
     updateLeftSuggestionFocus(suggestions);
   } else if (e.key === 'Enter') {
     e.preventDefault();
@@ -814,6 +858,27 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   elements.leftSubmitBtn.addEventListener('click', submitLeftQuery);
+
+  // Related panel sort and Top-K buttons
+  elements.sortByCoCountBtn.addEventListener('click', () => {
+    renderRelatedTerms(state.leftResults, 'co_count', state.relatedTopK);
+  });
+
+  elements.sortByJaccardBtn.addEventListener('click', () => {
+    renderRelatedTerms(state.leftResults, 'jaccard', state.relatedTopK);
+  });
+
+  elements.topk10Btn.addEventListener('click', () => {
+    renderRelatedTerms(state.leftResults, state.relatedSortBy, 10);
+  });
+
+  elements.topk20Btn.addEventListener('click', () => {
+    renderRelatedTerms(state.leftResults, state.relatedSortBy, 20);
+  });
+
+  elements.topk50Btn.addEventListener('click', () => {
+    renderRelatedTerms(state.leftResults, state.relatedSortBy, 50);
+  });
 
   // Click outside to hide suggestions
   document.addEventListener('click', (e) => {
