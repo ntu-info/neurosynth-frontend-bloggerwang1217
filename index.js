@@ -278,7 +278,6 @@ function renderSuggestions(terms, container, prefix, isLeftPanel = false) {
     const li = document.createElement('li');
     li.role = 'option';
     li.className = 'suggestion-item';
-    // UPDATE-1.md requirement 2: Pre-select first item (index 0)
     if (
       (isLeftPanel && index === state.leftSuggestionIndex) ||
       (!isLeftPanel && index === state.mainSuggestionIndex)
@@ -316,7 +315,6 @@ function selectSuggestion(term, isLeftPanel) {
     elements.leftInput.value = term;
     submitLeftQuery();
   } else {
-    // UPDATE-2.md: Replace current word without adding space
     const cursorPos = elements.mainInput.selectionStart;
     const value = elements.mainInput.value;
 
@@ -453,8 +451,6 @@ function createRelatedTermElement(item, coCountRanks, jaccardRanks) {
 
   infoDiv.appendChild(termDiv);
   infoDiv.appendChild(scoresDiv);
-
-  // Copy button removed (UPDATE-1.md requirement 7)
 
   li.appendChild(infoDiv);
 
@@ -645,7 +641,6 @@ function handleMainKeydown(e) {
   const isOperatorChooserVisible = state.operatorChooserActive;
 
   if (isOperatorChooserVisible) {
-    // Handle operator chooser keys (UPDATE-2.md requirement 4)
     if (e.key === 'ArrowUp') {
       e.preventDefault();
       state.operatorIndex = (state.operatorIndex - 1 + state.operators.length) % state.operators.length;
@@ -670,25 +665,28 @@ function handleMainKeydown(e) {
 
   if (e.key === 'ArrowDown' && suggestionVisible) {
     e.preventDefault();
-    // UPDATE-1.md requirement 2: Cycling arrow navigation (Google behavior)
     state.mainSuggestionIndex = (state.mainSuggestionIndex + 1) % suggestions.length;
     updateSuggestionFocus(suggestions);
+
   } else if (e.key === 'ArrowUp' && suggestionVisible) {
     e.preventDefault();
-    // UPDATE-1.md requirement 2: Cycling arrow navigation (Google behavior)
     state.mainSuggestionIndex = (state.mainSuggestionIndex - 1 + suggestions.length) % suggestions.length;
     updateSuggestionFocus(suggestions);
+
   } else if (e.key === 'Enter') {
     e.preventDefault();
+
     if (suggestionVisible && state.mainSuggestionIndex >= 0) {
       // Just replace, don't submit
       const selectedTerm = suggestions[state.mainSuggestionIndex].textContent
         .split('Copy')[0]
         .trim();
       selectSuggestion(selectedTerm, false);
+
     } else {
       // Submit query
       submitMainQuery();
+
     }
   } else if (e.key === ' ') {
     e.preventDefault();
@@ -720,7 +718,6 @@ function updateSuggestionFocus(suggestions) {
   });
 }
 
-// UPDATE-2.md requirement 4: Initialize operator chooser as list
 function initializeOperatorChooser() {
   const operatorList = elements.operatorChooser;
   operatorList.innerHTML = '';
@@ -852,12 +849,10 @@ function handleLeftKeydown(e) {
     }
   } else if (e.key === 'ArrowDown' && suggestionVisible) {
     e.preventDefault();
-    // UPDATE-1.md requirement 2: Cycling arrow navigation (Google behavior)
     state.leftSuggestionIndex = (state.leftSuggestionIndex + 1) % suggestions.length;
     updateLeftSuggestionFocus(suggestions);
   } else if (e.key === 'ArrowUp' && suggestionVisible) {
     e.preventDefault();
-    // UPDATE-1.md requirement 2: Cycling arrow navigation (Google behavior)
     state.leftSuggestionIndex = (state.leftSuggestionIndex - 1 + suggestions.length) % suggestions.length;
     updateLeftSuggestionFocus(suggestions);
   }
