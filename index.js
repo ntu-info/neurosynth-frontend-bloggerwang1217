@@ -31,7 +31,7 @@ const state = {
   leftSuggestionIndex: -1,
   operatorChooserVisible: false,
   operatorIndex: 0,
-  operators: [' ', 'AND', 'OR', 'NOT'],
+  operators: ['AND', 'OR', 'NOT'], // UPDATE-2.md: Only AND, OR, NOT (no space)
   cursorAfterSpace: 0, // Position where space was typed
   leftResults: [], // Related terms data
   resultsData: [], // Study results
@@ -63,9 +63,9 @@ const elements = {
   leftSuggestions: document.getElementById('leftSuggestions'),
   leftGhostSuggestion: document.getElementById('leftGhostSuggestion'),
 
-  // Operator chooser
+  // Operator chooser (UPDATE-2.md)
+  operatorChooserContainer: document.getElementById('operatorChooserContainer'),
   operatorChooser: document.getElementById('operatorChooser'),
-  operatorIndicator: document.getElementById('operatorIndicator'),
 
   // Related panel
   relatedPanel: document.getElementById('relatedPanel'),
@@ -335,16 +335,16 @@ function selectSuggestion(term, isLeftPanel) {
     elements.leftInput.value = term;
     submitLeftQuery();
   } else {
-    // Replace current word and add space
+    // UPDATE-2.md: Replace current word without adding space
     const cursorPos = elements.mainInput.selectionStart;
     const value = elements.mainInput.value;
 
     // Find the start of current word (last space or start of string)
     let wordStart = value.lastIndexOf(' ', cursorPos - 1) + 1;
     const before = value.substring(0, wordStart);
-    elements.mainInput.value = before + term + ' ';
+    elements.mainInput.value = before + term;
     elements.mainInput.focus();
-    elements.mainInput.setSelectionRange(before.length + term.length + 1, before.length + term.length + 1);
+    elements.mainInput.setSelectionRange(before.length + term.length, before.length + term.length);
 
     state.mainInput = elements.mainInput.value;
     hideSuggestions(false);
@@ -406,6 +406,19 @@ function renderRelatedTerms(related, sortBy = 'co_count', topK = 10) {
   state.relatedSortBy = sortBy;
   state.relatedTopK = topK;
 
+  // UPDATE-2.md requirement 2: Calculate rankings based on ALL related terms
+  const byCoCount = [...related].sort((a, b) => b.co_count - a.co_count);
+  const coCountRanks = new Map();
+  byCoCount.forEach((item, idx) => {
+    coCountRanks.set(item.term, idx + 1);
+  });
+
+  const byJaccard = [...related].sort((a, b) => b.jaccard - a.jaccard);
+  const jaccardRanks = new Map();
+  byJaccard.forEach((item, idx) => {
+    jaccardRanks.set(item.term, idx + 1);
+  });
+
   // UPDATE-1.md requirement 5: Sort by selected method and slice to topK
   const sorted = [...related].sort((a, b) =>
     sortBy === 'co_count'
@@ -413,10 +426,10 @@ function renderRelatedTerms(related, sortBy = 'co_count', topK = 10) {
       : b.jaccard - a.jaccard
   ).slice(0, topK);
 
-  // Render single column
+  // Render single column with ranking info
   elements.relatedList.innerHTML = '';
   sorted.forEach((item) => {
-    elements.relatedList.appendChild(createRelatedTermElement(item));
+    elements.relatedList.appendChild(createRelatedTermElement(item, coCountRanks, jaccardRanks));
   });
 
   // Update button states
@@ -427,7 +440,7 @@ function renderRelatedTerms(related, sortBy = 'co_count', topK = 10) {
   elements.topk50Btn.classList.toggle('active', topK === 50);
 }
 
-function createRelatedTermElement(item) {
+function createRelatedTermElement(item, coCountRanks, jaccardRanks) {
   const li = document.createElement('li');
   li.className = 'related-item';
   li.role = 'option';
@@ -441,7 +454,19 @@ function createRelatedTermElement(item) {
 
   const scoresDiv = document.createElement('div');
   scoresDiv.className = 'related-item-scores';
-  scoresDiv.textContent = `co_count: ${item.co_count}, jaccard: ${item.jaccard.toFixed(4)}`;
+
+  // UPDATE-2.md requirement 2: Show ranking based on all related terms
+  let scoreText = `co_count: ${item.co_count}`;
+  if (coCountRanks && coCountRanks.has(item.term)) {
+    scoreText += ` (#${coCountRanks.get(item.term)} for co_count)`;
+  }
+  scoreText += `, jaccard: ${item.jaccard.toFixed(4)}`;
+  if (jaccardRanks && jaccardRanks.has(item.term)) {
+    scoreText += ` (#${jaccardRanks.get(item.term)} for jaccard)`;
+  }
+
+  scoresDiv.textContent = scoreText;
+  scoresDiv.title = scoreText; // Also set as tooltip
 
   infoDiv.appendChild(termDiv);
   infoDiv.appendChild(scoresDiv);
@@ -591,15 +616,15 @@ function handleMainKeydown(e) {
   const isOperatorChooserVisible = state.operatorChooserActive;
 
   if (isOperatorChooserVisible) {
-    // Handle operator chooser keys
+    // Handle operator chooser keys (UPDATE-2.md requirement 4)
     if (e.key === 'ArrowUp') {
       e.preventDefault();
       state.operatorIndex = (state.operatorIndex - 1 + state.operators.length) % state.operators.length;
-      updateOperatorDisplay();
+      updateOperatorFocus();
     } else if (e.key === 'ArrowDown') {
       e.preventDefault();
       state.operatorIndex = (state.operatorIndex + 1) % state.operators.length;
-      updateOperatorDisplay();
+      updateOperatorFocus();
     } else if (e.key === 'Enter' || e.key === 'Tab') {
       e.preventDefault();
       confirmOperator();
@@ -694,34 +719,69 @@ function updateSuggestionFocus(suggestions) {
   });
 }
 
+// UPDATE-2.md requirement 4: Initialize operator chooser as list
+function initializeOperatorChooser() {
+  const operatorList = elements.operatorChooser;
+  operatorList.innerHTML = '';
+
+  state.operators.forEach((op, idx) => {
+    const li = document.createElement('li');
+    li.className = 'operator-item';
+    li.textContent = op;
+    li.dataset.value = op;
+    li.dataset.index = idx;
+
+    // Default to AND (index 0)
+    if (idx === 0) {
+      li.classList.add('focused');
+    }
+
+    // Click to select
+    li.addEventListener('click', () => {
+      state.operatorIndex = idx;
+      updateOperatorFocus();
+      confirmOperator();
+    });
+
+    // Hover to preview
+    li.addEventListener('mouseenter', () => {
+      state.operatorIndex = idx;
+      updateOperatorFocus();
+    });
+
+    operatorList.appendChild(li);
+  });
+}
+
+function updateOperatorFocus() {
+  const items = document.querySelectorAll('.operator-item');
+  items.forEach((item, idx) => {
+    item.classList.toggle('focused', idx === state.operatorIndex);
+  });
+}
+
 function showOperatorChooser() {
   state.operatorChooserActive = true;
-  state.operatorIndex = 1; // Default to AND
-  elements.operatorChooser.style.display = 'flex';
-  updateOperatorDisplay();
+  state.operatorIndex = 0; // Default to AND (first item)
+  elements.operatorChooserContainer.style.display = 'block';
+  updateOperatorFocus();
 }
 
 function hideOperatorChooser() {
   state.operatorChooserActive = false;
-  elements.operatorChooser.style.display = 'none';
+  elements.operatorChooserContainer.style.display = 'none';
   state.operatorIndex = 0;
-}
-
-function updateOperatorDisplay() {
-  elements.operatorIndicator.textContent = state.operators[state.operatorIndex];
 }
 
 function confirmOperator() {
   const selectedOp = state.operators[state.operatorIndex];
-  const cursorPos = state.cursorAfterSpace;
   const value = elements.mainInput.value;
 
-  // Replace the space with the operator + space
-  const before = value.substring(0, cursorPos - 1);
-  const after = value.substring(cursorPos);
-  elements.mainInput.value = before + selectedOp + ' ' + after;
+  // UPDATE-2.md: Don't replace the space, and don't add space after operator
+  // Just append the operator after the existing space
+  elements.mainInput.value = value + selectedOp;
   elements.mainInput.focus();
-  elements.mainInput.setSelectionRange(before.length + selectedOp.length + 1, before.length + selectedOp.length + 1);
+  elements.mainInput.setSelectionRange(value.length + selectedOp.length, value.length + selectedOp.length);
 
   state.mainInput = elements.mainInput.value;
   hideOperatorChooser();
@@ -858,6 +918,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
   });
   elements.leftSubmitBtn.addEventListener('click', submitLeftQuery);
+
+  // Initialize operator chooser list (UPDATE-2.md requirement 4)
+  initializeOperatorChooser();
 
   // Related panel sort and Top-K buttons
   elements.sortByCoCountBtn.addEventListener('click', () => {

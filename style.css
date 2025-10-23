@@ -95,6 +95,8 @@ body {
   border: 2px solid #e0e0e0;
   border-radius: 6px;
   font-size: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  line-height: 1.5;
   color: #bdc3c7;
   pointer-events: none;
   white-space: nowrap;
@@ -102,6 +104,7 @@ body {
   display: flex;
   align-items: center;
   z-index: 1;
+  height: 48px;
 }
 
 .input-field {
@@ -110,11 +113,14 @@ body {
   border: 2px solid #e0e0e0;
   border-radius: 6px;
   font-size: 14px;
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  line-height: 1.5;
   outline: none;
   transition: all 0.3s ease;
   position: relative;
   z-index: 2;
   background: transparent;
+  height: 48px;
 }
 
 .input-field::placeholder {
@@ -232,28 +238,48 @@ body {
   background: #229954;
 }
 
-/* Operator Chooser */
-.operator-chooser {
-  display: flex;
-  align-items: center;
-  gap: 10px;
-  padding: 10px 15px;
-  background: #f0f7ff;
-  border: 2px dashed #3498db;
-  border-radius: 4px;
-  margin-bottom: 15px;
-  font-size: 14px;
-  color: #7f8c8d;
+/* Operator Chooser (UPDATE-2.md requirement 4: Google Search style) */
+.operator-chooser-container {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  width: 100%;
+  margin: 0;
+  margin-top: -2px;
+  z-index: 100;
 }
 
-.operator-indicator {
-  padding: 6px 12px;
+.operator-list {
+  list-style: none;
+  border: 1px solid #ecf0f1;
+  border-radius: 4px;
+  background: white;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  margin: 0;
+  padding: 0;
+}
+
+.operator-item {
+  padding: 10px 15px;
+  cursor: pointer;
+  border-bottom: 1px solid #ecf0f1;
+  transition: all 0.15s ease;
+  font-size: 14px;
+}
+
+.operator-item:last-child {
+  border-bottom: none;
+}
+
+.operator-item:hover {
+  background: #f0f7ff;
+  color: #2c3e50;
+}
+
+.operator-item.focused {
   background: #3498db;
   color: white;
-  border-radius: 4px;
-  text-decoration: underline;
-  font-weight: 600;
-  display: inline-block;
 }
 
 /* Related Terms Panel */
