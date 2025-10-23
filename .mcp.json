@@ -1,0 +1,12 @@
+{
+  "mcp_servers": {
+    "playwright": {
+      "transport": "stdio",
+      "command": "npx",
+      "args": ["@playwright/mcp"],
+      "env": {
+        "BROWSER": "chromium"
+      }
+    }
+  }
+}
