@@ -2,45 +2,113 @@
 <html lang="en">
 <head>
   <meta charset="UTF-8" />
-  <title>Fetch /terms Demo</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Neurosynth Frontend</title>
+  <link rel="stylesheet" href="style.css" />
 </head>
 <body>
-  <h1>Fetch https://mil.psy.ntu.edu.tw:5000/terms</h1>
-  <button id="btn">Fetch again</button>
-  <pre id="out">Loading…</pre>
+  <div class="container">
+    <!-- Header -->
+    <header class="header">
+      <h1>Neurosynth Search</h1>
+      <p class="help-text">Supported: AND, OR, NOT operators; "exact phrases"; boolean queries</p>
+    </header>
 
-  <script>
-    async function fetchTerms() {
-      const out = document.getElementById('out');
-      out.textContent = 'Requesting…';
-      try {
-        const resp = await fetch('https://mil.psy.ntu.edu.tw:5000/terms');
-        let info = `HTTP ${resp.status} ${resp.statusText}\n`;
-        const ct = resp.headers.get('content-type') || '';
+    <!-- Main Content -->
+    <div class="main-layout">
+      <!-- Left Panel: Single Term Query -->
+      <aside class="left-panel">
+        <h2>Search by Term</h2>
+        <div class="input-group">
+          <input
+            id="leftInput"
+            type="text"
+            placeholder="Enter a single term..."
+            class="input-field"
+            aria-label="Single term search"
+            aria-autocomplete="list"
+            aria-controls="leftSuggestions"
+          />
+          <button id="leftSubmitBtn" class="submit-btn">Search</button>
+        </div>
 
-        if (!resp.ok) {
-          const text = await resp.text();
-          out.textContent = info + '\n' + text;
-          return;
-        }
+        <!-- Left Suggestions -->
+        <div id="leftSuggestionsContainer" class="suggestions-container" style="display: none;">
+          <div id="leftGhostSuggestion" class="ghost-suggestion"></div>
+          <ul
+            id="leftSuggestions"
+            class="suggestions-list"
+            role="listbox"
+            aria-label="Term suggestions"
+          ></ul>
+        </div>
 
-        if (ct.includes('application/json')) {
-          const data = await resp.json();
-          out.textContent = info + '\n' + JSON.stringify(data, null, 2);
-        } else {
-          const text = await resp.text();
-          out.textContent = info + '\n' + text;
-        }
-      } catch (err) {
-        document.getElementById('out').textContent =
-          'Error: ' + (err && err.message ? err.message : String(err)) +
-          '\n\nCommon causes:\n1) CORS not allowed by the server\n2) Opening this file via file:// instead of a local server\n3) Network/server issues';
-      }
-    }
+        <!-- Related Terms Panel -->
+        <div id="relatedPanel" class="related-panel" style="display: none;">
+          <h3>Related Terms</h3>
+          <div class="related-columns">
+            <div class="related-column">
+              <h4>By Co-Count</h4>
+              <div class="related-list-container">
+                <ul id="relatedByCoCount" class="related-list" role="listbox"></ul>
+              </div>
+            </div>
+            <div class="related-column">
+              <h4>By Jaccard</h4>
+              <div class="related-list-container">
+                <ul id="relatedByJaccard" class="related-list" role="listbox"></ul>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
 
-    document.getElementById('btn').addEventListener('click', fetchTerms);
-    fetchTerms();
-  </script>
+      <!-- Right Panel: Complex Query -->
+      <main class="right-panel">
+        <h2>Complex Query</h2>
+        <div class="input-group">
+          <input
+            id="mainInput"
+            type="text"
+            placeholder="Enter query (e.g., 'amygdala AND emotion')..."
+            class="input-field"
+            aria-label="Complex query search"
+            aria-autocomplete="list"
+            aria-controls="mainSuggestions"
+          />
+          <button id="mainSubmitBtn" class="submit-btn">Search</button>
+        </div>
+
+        <!-- Operator IME Chooser -->
+        <div id="operatorChooser" class="operator-chooser" style="display: none;">
+          <span id="operatorIndicator" class="operator-indicator">AND</span>
+        </div>
+
+        <!-- Main Suggestions -->
+        <div id="mainSuggestionsContainer" class="suggestions-container" style="display: none;">
+          <div id="ghostSuggestion" class="ghost-suggestion"></div>
+          <ul
+            id="mainSuggestions"
+            class="suggestions-list"
+            role="listbox"
+            aria-label="Query suggestions"
+          ></ul>
+        </div>
+
+        <!-- Results Section -->
+        <div id="resultsSection" class="results-section" style="display: none;">
+          <h3>Results (<span id="resultCount">0</span> found)</h3>
+          <div id="resultsList" class="results-list"></div>
+          <div id="resultsError" class="error-message" style="display: none;"></div>
+          <div id="resultsLoading" class="loading-indicator" style="display: none;">Loading...</div>
+        </div>
+      </main>
+    </div>
+  </div>
+
+  <!-- Toast Notifications -->
+  <div id="toastContainer" class="toast-container"></div>
+
+  <script src="index.js"></script>
 </body>
 </html>
-
