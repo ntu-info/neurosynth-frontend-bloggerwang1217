@@ -31,14 +31,14 @@ const state = {
   leftSuggestionIndex: -1,
   operatorChooserVisible: false,
   operatorIndex: 0,
-  operators: ['AND', 'OR', 'NOT'], // UPDATE-2.md: Only AND, OR, NOT (no space)
+  operators: ['AND', 'OR', 'NOT'], // Only AND, OR, NOT (no space)
   cursorAfterSpace: 0, // Position where space was typed
   leftResults: [], // Related terms data
   resultsData: [], // Study results
   resultsTotal: 0,
   currentQuery: '',
   operatorChooserActive: false,
-  // UPDATE-1.md requirement 5: Related terms sorting and Top-K
+  // Related terms sorting and Top-K
   relatedSortBy: 'co_count',
   relatedTopK: 10,
   // Results sorting
@@ -60,7 +60,7 @@ const elements = {
   leftSuggestionsContainer: document.getElementById('leftSuggestionsContainer'),
   leftSuggestions: document.getElementById('leftSuggestions'),
 
-  // Operator chooser (UPDATE-2.md)
+  // Operator chooser
   operatorChooserContainer: document.getElementById('operatorChooserContainer'),
   operatorChooser: document.getElementById('operatorChooser'),
 
@@ -265,7 +265,7 @@ function renderSuggestions(terms, container, prefix, isLeftPanel = false) {
 
   container.parentElement.style.display = 'block';
 
-  // UPDATE-1.md requirement 2: Pre-select first item (set index to 0, not -1)
+  // Pre-select first item (set index to 0, not -1)
   if (isLeftPanel) {
     state.leftSuggestionIndex = 0;
   } else {
@@ -290,7 +290,7 @@ function renderSuggestions(terms, container, prefix, isLeftPanel = false) {
     textSpan.innerHTML = highlightPrefix(term, prefix);
     li.appendChild(textSpan);
 
-    // Copy buttons removed (UPDATE-1.md requirement 7)
+    // Copy buttons removed
 
     li.addEventListener('click', () => {
       selectSuggestion(term, isLeftPanel);
@@ -378,7 +378,7 @@ function renderRelatedTerms(related, sortBy = 'co_count', topK = 10) {
   state.relatedSortBy = sortBy;
   state.relatedTopK = topK;
 
-  // UPDATE-2.md requirement 2: Calculate rankings based on ALL related terms
+  // Calculate rankings based on ALL related terms
   const byCoCount = [...related].sort((a, b) => b.co_count - a.co_count);
   const coCountRanks = new Map();
   byCoCount.forEach((item, idx) => {
@@ -391,7 +391,7 @@ function renderRelatedTerms(related, sortBy = 'co_count', topK = 10) {
     jaccardRanks.set(item.term, idx + 1);
   });
 
-  // UPDATE-1.md requirement 5: Sort by selected method and slice to topK
+  // Sort by selected method and slice to topK
   const sorted = [...related].sort((a, b) =>
     sortBy === 'co_count'
       ? b.co_count - a.co_count
@@ -431,7 +431,7 @@ function createRelatedTermElement(item, coCountRanks, jaccardRanks) {
   const scoresDiv = document.createElement('div');
   scoresDiv.className = 'related-item-scores';
 
-  // UPDATE-2.md requirement 2: Show ranking based on all related terms
+  // Show ranking based on all related terms
   let coCountText = `co_count: ${item.co_count}`;
   if (coCountRanks && coCountRanks.has(item.term)) {
     coCountText += ` (#${coCountRanks.get(item.term)} for co_count)`;
@@ -777,7 +777,7 @@ function confirmOperator() {
   const selectedOp = state.operators[state.operatorIndex];
   const value = elements.mainInput.value;
 
-  // UPDATE-2.md: Append operator and add space after it for next term
+  // Append operator and add space after it for next term
   elements.mainInput.value = value + selectedOp + ' ';
   elements.mainInput.focus();
   elements.mainInput.setSelectionRange(value.length + selectedOp.length + 1, value.length + selectedOp.length + 1);
@@ -794,9 +794,8 @@ async function submitMainQuery() {
     return;
   }
 
-  // UPDATE-1.md requirement 3: Remove trailing whitespace
   state.currentQuery = query;
-  elements.mainInput.value = query; // Also update the input field
+  elements.mainInput.value = query;
 
   // Show loading indicator, hide results
   elements.resultsSection.style.display = 'block';
@@ -921,7 +920,7 @@ document.addEventListener('DOMContentLoaded', () => {
   });
   elements.leftSubmitBtn.addEventListener('click', submitLeftQuery);
 
-  // Initialize operator chooser list (UPDATE-2.md requirement 4)
+  // Initialize operator chooser list
   initializeOperatorChooser();
 
   // Related panel sort and Top-K buttons
