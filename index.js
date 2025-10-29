@@ -78,6 +78,7 @@ const elements = {
   resultsSection: document.getElementById('resultsSection'),
   resultsList: document.getElementById('resultsList'),
   resultCount: document.getElementById('resultCount'),
+  currentQuery: document.getElementById('currentQuery'),
   resultsError: document.getElementById('resultsError'),
   resultsLoading: document.getElementById('resultsLoading'),
   resultsControls: document.getElementById('resultsControls'),
@@ -119,10 +120,13 @@ function debounce(func, delay) {
   };
 }
 
-// Debounced submit for main query so input updates trigger AJAX reliably
-const debouncedSubmitMainQuery = debounce(() => {
+// Debounced submit for main query so input updates trigger AJAX reliably.
+// Accept the current query as an argument to avoid reading stale `state.mainInput`
+// when the debounced callback finally runs (this prevents overwriting the
+// user's fast edits with an older value).
+const debouncedSubmitMainQuery = debounce((query) => {
   // fire-and-forget; submitMainQuery manages its own loading state and aborts
-  submitMainQuery();
+  submitMainQuery(query);
 }, CONFIG.DEBOUNCE_MS);
 
 function highlightPrefix(text, prefix) {
@@ -318,19 +322,29 @@ function selectSuggestion(term, isLeftPanel) {
   if (isLeftPanel) {
     elements.leftInput.value = term;
     submitLeftQuery();
-  } else {
-    const cursorPos = elements.mainInput.selectionStart;
-    const value = elements.mainInput.value;
+    return;
+  }
 
-    // Find the start of current word (last space or start of string)
-    let wordStart = value.lastIndexOf(' ', cursorPos - 1) + 1;
-    const before = value.substring(0, wordStart);
-    elements.mainInput.value = before + term;
-    elements.mainInput.focus();
-    elements.mainInput.setSelectionRange(before.length + term.length, before.length + term.length);
+  // Right (complex) panel: replace the current word with the selected term
+  const cursorPos = elements.mainInput.selectionStart;
+  const value = elements.mainInput.value;
 
-    state.mainInput = elements.mainInput.value;
-    hideSuggestions(false);
+  // Find the start of current word (last space or start of string)
+  const wordStart = value.lastIndexOf(' ', cursorPos - 1) + 1;
+  const before = value.substring(0, wordStart);
+  elements.mainInput.value = before + term;
+  elements.mainInput.focus();
+  elements.mainInput.setSelectionRange(before.length + term.length, before.length + term.length);
+
+  state.mainInput = elements.mainInput.value;
+  hideSuggestions(false);
+
+  // After an explicit selection, trigger the complex query immediately using
+  // the current input snapshot. Log any error rather than letting it bubble.
+  try {
+    submitMainQuery(state.mainInput.trim());
+  } catch (err) {
+    console.error('submitMainQuery error after selecting suggestion:', err);
   }
 }
 
@@ -479,6 +493,8 @@ function renderResults(data) {
   state.resultsData = data.results;
   state.resultsTotal = data.count;
 
+  // Update header with current query snapshot and result count
+  elements.currentQuery.textContent = state.currentQuery;
   elements.resultCount.textContent = state.resultsTotal;
   elements.resultsList.innerHTML = '';
 
@@ -651,10 +667,10 @@ async function handleMainInput() {
   if (lastChar !== ' ' && !state.operatorChooserActive) {
     const fullQuery = state.mainInput.trim();
     if (fullQuery.length >= CONFIG.MIN_LENGTH) {
-      // Use debounced submit so rapid typing doesn't flood the API and updates are
-      // sent after a small pause. submitMainQuery handles cancellation of prior
-      // requests via AbortController.
-      debouncedSubmitMainQuery();
+      // Pass the current (trimmed) query into the debounced submit so the
+      // scheduled submission uses this snapshot instead of reading a potentially
+      // stale `state.mainInput` later.
+      debouncedSubmitMainQuery(fullQuery);
     } else {
       // hide results when query is too short
       elements.resultsSection.style.display = 'none';
@@ -816,15 +832,15 @@ function confirmOperator() {
   handleMainInput();
 }
 
-async function submitMainQuery() {
-  const query = state.mainInput.trim();
+async function submitMainQuery(queryArg) {
+  // Allow callers to pass a snapshot query to avoid race-overwrites.
+  const query = typeof queryArg === 'string' ? queryArg : state.mainInput.trim();
   if (query.length === 0) {
     showToast('Please enter a query', 'error');
     return;
   }
 
   state.currentQuery = query;
-  elements.mainInput.value = query;
 
   // Show loading indicator, hide results
   elements.resultsSection.style.display = 'block';
