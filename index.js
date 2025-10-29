@@ -50,8 +50,6 @@ const elements = {
   // Main query inputs
   mainInput: document.getElementById('mainInput'),
   leftInput: document.getElementById('leftInput'),
-  mainSubmitBtn: document.getElementById('mainSubmitBtn'),
-  leftSubmitBtn: document.getElementById('leftSubmitBtn'),
 
 
   // Suggestions
@@ -370,7 +368,12 @@ function copyToClipboard(text) {
 
 function renderRelatedTerms(related, sortBy = 'co_count', topK = 10) {
   if (!related || related.length === 0) {
-    elements.relatedPanel.style.display = 'none';
+    // Show panel and a friendly message when no related terms are found
+    elements.relatedPanel.style.display = 'block';
+    elements.relatedLoading.style.display = 'none';
+    elements.relatedControls.style.display = 'none';
+    elements.relatedListContainer.style.display = 'block';
+    elements.relatedList.innerHTML = `<div style="padding:12px;color:#7f8c8d;">No related terms found</div>`;
     return;
   }
 
@@ -635,6 +638,19 @@ async function handleMainInput() {
   } else {
     hideSuggestions(false);
   }
+
+  // Also auto-submit the full query (debounced) if it's long enough,
+  // but do NOT auto-submit immediately after the user typed a space
+  // (space is used to trigger the operator chooser and should be preserved).
+  if (lastChar !== ' ' && !state.operatorChooserActive) {
+    const fullQuery = state.mainInput.trim();
+    if (fullQuery.length >= CONFIG.MIN_LENGTH) {
+      await submitMainQuery();
+    } else {
+      // hide results when query is too short
+      elements.resultsSection.style.display = 'none';
+    }
+  }
 }
 
 function handleMainKeydown(e) {
@@ -688,6 +704,10 @@ function handleMainKeydown(e) {
       submitMainQuery();
 
     }
+  } else if (e.key === 'Escape' && suggestionVisible) {
+    // Close only the main suggestions when Escape is pressed and suggestions are visible
+    e.preventDefault();
+    hideSuggestions(false);
   } else if (e.key === ' ') {
     e.preventDefault();
     // Type space and prepare operator chooser
@@ -827,8 +847,18 @@ async function handleLeftInput() {
   if (currentWord.length >= CONFIG.MIN_LENGTH) {
     const terms = await fetchTerms();
     renderSuggestions(terms, elements.leftSuggestions, currentWord, true);
+
+    // Auto-fetch related terms via AJAX (debounced)
+    elements.relatedPanel.style.display = 'block';
+    elements.relatedLoading.style.display = 'block';
+    elements.relatedControls.style.display = 'none';
+    elements.relatedListContainer.style.display = 'none';
+    const related = await fetchRelatedTerms(currentWord);
+    elements.relatedLoading.style.display = 'none';
+    renderRelatedTerms(related);
   } else {
     hideSuggestions(true);
+    elements.relatedPanel.style.display = 'none';
   }
 }
 
@@ -856,6 +886,10 @@ function handleLeftKeydown(e) {
     e.preventDefault();
     state.leftSuggestionIndex = (state.leftSuggestionIndex - 1 + suggestions.length) % suggestions.length;
     updateLeftSuggestionFocus(suggestions);
+  } else if (e.key === 'Escape' && suggestionVisible) {
+    // Close only the left suggestions when Escape is pressed
+    e.preventDefault();
+    hideSuggestions(true);
   }
 }
 
@@ -907,7 +941,6 @@ document.addEventListener('DOMContentLoaded', () => {
       handleMainInput();
     }
   });
-  elements.mainSubmitBtn.addEventListener('click', submitMainQuery);
 
   // Left input
   const debouncedLeftInput = debounce(handleLeftInput, CONFIG.DEBOUNCE_MS);
@@ -918,7 +951,6 @@ document.addEventListener('DOMContentLoaded', () => {
       handleLeftInput();
     }
   });
-  elements.leftSubmitBtn.addEventListener('click', submitLeftQuery);
 
   // Initialize operator chooser list
   initializeOperatorChooser();

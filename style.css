@@ -99,7 +99,7 @@ body {
   position: relative;
 }
 
-/* UPDATE-1.md requirement 1: Dual-layer ghost suggestion design */
+/* Dual-layer ghost suggestion design */
 .input-wrapper {
   flex: 1;
   position: relative;
@@ -151,16 +151,17 @@ body {
   transform: translateY(0);
 }
 
-/* Suggestions - UPDATE-1.md requirement 2: Google Search style (attached to input) */
+/* Suggestions: Google Search style (attached to input) */
 .suggestions-container {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
-  margin: 0;
-  margin-top: -2px;
-  z-index: 100;
+  /* Participate in document flow so the suggestion box pushes content down
+    instead of overlaying it. When the input wrapper is a flex row, force
+    the suggestions to occupy a full row below the input using flex-basis. */
+  position: static;
+  margin: 8px 0 0 0;
   width: 100%;
+  /* Make this a full-width flex child so it wraps to the next line in
+    .input-wrapper (which is display:flex). */
+  flex: 0 0 100%;
 }
 
 .suggestions-list {
@@ -224,16 +225,15 @@ body {
   background: #d94a8a;
 }
 
-/* Operator Chooser (UPDATE-2.md requirement 4: Google Search style) */
+/* Operator Chooser: Google Search style) */
 .operator-chooser-container {
-  position: absolute;
-  top: 100%;
-  left: 0;
-  right: 0;
+  /* Keep operator chooser in the normal flow so it pushes content down.
+     Force it to a full-width flex child to ensure it sits beneath the input
+     inside .input-wrapper. */
+  position: static;
+  margin: 8px 0 0 0;
   width: 100%;
-  margin: 0;
-  margin-top: -2px;
-  z-index: 100;
+  flex: 0 0 100%;
 }
 
 .operator-list {

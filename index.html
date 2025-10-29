@@ -36,17 +36,17 @@
               aria-autocomplete="list"
               aria-controls="leftSuggestions"
             />
-            <!-- Left Suggestions (nested for Google-style positioning) -->
-            <div id="leftSuggestionsContainer" class="suggestions-container" style="display: none;">
-              <ul
-                id="leftSuggestions"
-                class="suggestions-list"
-                role="listbox"
-                aria-label="Term suggestions"
-              ></ul>
-            </div>
           </div>
-          <button id="leftSubmitBtn" class="submit-btn">Search</button>
+        </div>
+        <!-- Left Suggestions: moved out of input-wrapper so it's a sibling of the panel
+             (prevents dropdown from being clipped by ancestor containers) -->
+        <div id="leftSuggestionsContainer" class="suggestions-container" style="display: none;">
+          <ul
+            id="leftSuggestions"
+            class="suggestions-list"
+            role="listbox"
+            aria-label="Term suggestions"
+          ></ul>
         </div>
 
         <!-- Related Terms Panel -->
@@ -86,23 +86,24 @@
               aria-autocomplete="list"
               aria-controls="mainSuggestions"
             />
-            <!-- Main Suggestions (nested for Google-style positioning) -->
-            <div id="mainSuggestionsContainer" class="suggestions-container" style="display: none;">
-              <ul
-                id="mainSuggestions"
-                class="suggestions-list"
-                role="listbox"
-                aria-label="Query suggestions"
-              ></ul>
-            </div>
-            <!-- Operator IME Chooser (UPDATE-2.md requirement 4) -->
-            <div id="operatorChooserContainer" class="operator-chooser-container" style="display: none;">
-              <ul id="operatorChooser" class="operator-list" role="listbox">
-                <!-- Dynamically generated -->
-              </ul>
-            </div>
           </div>
-          <button id="mainSubmitBtn" class="submit-btn">Search</button>
+        </div>
+
+        <!-- Main Suggestions: moved out of input-wrapper so it's a sibling of the panel
+             (prevents dropdown from being clipped by ancestor containers) -->
+        <div id="mainSuggestionsContainer" class="suggestions-container" style="display: none;">
+          <ul
+            id="mainSuggestions"
+            class="suggestions-list"
+            role="listbox"
+            aria-label="Query suggestions"
+          ></ul>
+        </div>
+        <!-- Operator IME Chooser moved out as well so it's embedded in the same panel -->
+        <div id="operatorChooserContainer" class="operator-chooser-container" style="display: none;">
+          <ul id="operatorChooser" class="operator-list" role="listbox">
+            <!-- Dynamically generated -->
+          </ul>
         </div>
 
         <!-- Results Section -->
