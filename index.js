@@ -119,6 +119,12 @@ function debounce(func, delay) {
   };
 }
 
+// Debounced submit for main query so input updates trigger AJAX reliably
+const debouncedSubmitMainQuery = debounce(() => {
+  // fire-and-forget; submitMainQuery manages its own loading state and aborts
+  submitMainQuery();
+}, CONFIG.DEBOUNCE_MS);
+
 function highlightPrefix(text, prefix) {
   if (!prefix) return text;
   const regex = new RegExp(`^(${prefix})`, 'i');
@@ -645,7 +651,10 @@ async function handleMainInput() {
   if (lastChar !== ' ' && !state.operatorChooserActive) {
     const fullQuery = state.mainInput.trim();
     if (fullQuery.length >= CONFIG.MIN_LENGTH) {
-      await submitMainQuery();
+      // Use debounced submit so rapid typing doesn't flood the API and updates are
+      // sent after a small pause. submitMainQuery handles cancellation of prior
+      // requests via AbortController.
+      debouncedSubmitMainQuery();
     } else {
       // hide results when query is too short
       elements.resultsSection.style.display = 'none';
