@@ -1,6 +1,6 @@
 // Configuration
 const CONFIG = {
-  API_BASE: 'https://mil.psy.ntu.edu.tw:5000',
+  API_BASE: 'https://hpc.psy.ntu.edu.tw:5000',
   DEBOUNCE_MS: 250,
   MIN_LENGTH: 2,
   INFINITE_SCROLL_THRESHOLD: 200,
